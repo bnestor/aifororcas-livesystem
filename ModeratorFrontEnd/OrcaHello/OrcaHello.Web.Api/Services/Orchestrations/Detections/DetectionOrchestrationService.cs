@@ -44,7 +44,7 @@
             };
         });
 
-        public ValueTask<DetectionListResponse> RetrieveFilteredDetectionsAsync(DateTime? fromDate, DateTime? toDate, string state, string sortBy, bool isDescending, 
+        public ValueTask<DetectionListResponse> RetrieveFilteredDetectionsAsync(DateTime? fromDate, DateTime? toDate, string state, string sortBy, bool isDescending,
             string location, int page, int pageSize) =>
         TryCatch(async () =>
         {
@@ -89,38 +89,57 @@
             return AsDetection(maybeMetadata);
         });
 
-        public ValueTask<Detection> ModerateDetectionByIdAsync(string id, ModerateDetectionRequest request) =>
+        public ValueTask<ModerateDetectionsResponse> ModerateDetectionsByIdAsync(ModerateDetectionsRequest request) =>
         TryCatch(async () =>
         {
-            Validate(id, nameof(id));
             ValidateModerateRequestOnUpdate(request);
 
-            // Get the current record
-            Metadata existingRecord = await _metadataService.RetrieveMetadataByIdAsync(id);
-            ValidateStorageMetadata(existingRecord, id);
-
-            var existingState = existingRecord.State;
-
-            // Make updates so they can be added as a new record
-            Metadata newRecord = existingRecord;
-            newRecord.State = request.State;
-            newRecord.Moderator = request.Moderator;
-            newRecord.DateModerated = request.DateModerated.ToString();
-            newRecord.Comments = request.Comments;
-            newRecord.Tags = request.Tags;
-
-            bool existingRecordDeleted = await _metadataService.RemoveMetadataByIdAndStateAsync(id, existingState);
-            ValidateDeleted(existingRecordDeleted, id);
-
-            bool newRecordCreated = await _metadataService.AddMetadataAsync(newRecord);
-
-            if(!newRecordCreated)
+            ModerateDetectionsResponse response = new()
             {
-                bool existingRecordRecreated = await _metadataService.AddMetadataAsync(existingRecord);
-                ValidateInserted(existingRecordRecreated, id);
+                IdsToUpdate = request.Ids,
+            };
+
+            foreach (var id in request.Ids)
+            {
+                // Get the current record
+                Metadata existingRecord = await _metadataService.RetrieveMetadataByIdAsync(id);
+
+                if (existingRecord is null)
+                    response.IdsNotFound.Add(id);
+                else
+                {
+                    var existingState = existingRecord.State;
+
+                    // Make updates so they can be added as a new record
+                    Metadata newRecord = existingRecord;
+                    newRecord.State = request.State;
+                    newRecord.Moderator = request.Moderator;
+                    newRecord.DateModerated = request.DateModerated.ToString();
+                    newRecord.Comments = request.Comments;
+                    newRecord.Tags = request.Tags;
+
+                    bool existingRecordDeleted = await _metadataService.RemoveMetadataByIdAndStateAsync(id, existingState);
+
+                    if (!existingRecordDeleted)
+                        response.IdsUnsuccessfullyUpdated.Add(id);
+                    else
+                    {
+                        bool newRecordCreated = await _metadataService.AddMetadataAsync(newRecord);
+
+                        if (!newRecordCreated)
+                        {
+                            response.IdsUnsuccessfullyUpdated.Add(id);
+                            bool existingRecordRecreated = await _metadataService.AddMetadataAsync(existingRecord);
+                        }
+                        else
+                        {
+                            response.IdsSuccessfullyUpdated.Add(id);
+                        }
+                    }
+                }
             }
 
-            return AsDetection(newRecord);
+            return response;
         });
 
         public ValueTask<DetectionListForInterestLabelResponse> RetrieveDetectionsForGivenInterestLabelAsync(string interestLabel) =>
@@ -139,7 +158,7 @@
              };
          });
 
-        private static Detection AsDetection(Metadata metadata)
+        public static Detection AsDetection(Metadata metadata)
         {
             var detection = new Detection
             {
@@ -156,7 +175,7 @@
                 Moderated = !string.IsNullOrWhiteSpace(metadata.DateModerated) ? DateTime.Parse(metadata.DateModerated) : null,
             };
 
-            if(metadata.Location != null)
+            if (metadata.Location != null)
             {
                 detection.Location = new Shared.Models.Detections.Location
                 {
@@ -171,7 +190,7 @@
             return detection;
         }
 
-        private static Annotation AsAnnotation(Prediction prediction)
+        public static Annotation AsAnnotation(Prediction prediction)
         {
             return new Annotation
             {
