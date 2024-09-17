@@ -5,7 +5,7 @@ pydub==0.24.1
 pandas
 numpy
 torchaudio
-git+https://github.com/fastaudio/fastai_audio@0.1
+transformers
 ipython
 spacy
 awscli

@@ -2,7 +2,7 @@
 # Rename these files
 from model.podcast_inference import OrcaDetectionModel
 from model.fastai_inference import FastAI2Model
-from model.huggingface_inference import HuggingFaceModel
+from model.huggingface_inference import HuggingfaceModel
 
 
 from orca_hls_utils.DateRangeHLSStream import DateRangeHLSStream
