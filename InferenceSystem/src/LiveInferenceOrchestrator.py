@@ -1,7 +1,7 @@
 # Live inference orchestrator
 # Rename these files
 from model.podcast_inference import OrcaDetectionModel
-from model.fastai_inference import FastAIModel
+from model.fastai_inference import FastAI2Model
 
 from orca_hls_utils.DateRangeHLSStream import DateRangeHLSStream
 from orca_hls_utils.HLSStream import HLSStream
@@ -118,7 +118,7 @@ if __name__ == "__main__":
 		whalecall_classification_model = OrcaDetectionModel(model_path, threshold=model_local_threshold, min_num_positive_calls_threshold=model_global_threshold)
 	elif model_type == "FastAI":
 		model_name = config_params["model_name"]
-		whalecall_classification_model = FastAIModel(model_path=model_path, model_name=model_name, threshold=model_local_threshold, min_num_positive_calls_threshold=model_global_threshold)
+		whalecall_classification_model = FastAI2Model(model_path=model_path, model_name=model_name, threshold=model_local_threshold, min_num_positive_calls_threshold=model_global_threshold)
 	else:
 		raise ValueError("model_type should be one of AudioSet / FastAIModel")
 
