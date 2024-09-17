@@ -1,5 +1,6 @@
 inference-venv
 .env
 true_srkw/
-model/
+/model/
+wav_dir/
 model.zip

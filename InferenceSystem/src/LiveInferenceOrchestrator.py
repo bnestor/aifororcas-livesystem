@@ -2,6 +2,8 @@
 # Rename these files
 from model.podcast_inference import OrcaDetectionModel
 from model.fastai_inference import FastAI2Model
+from model.huggingface_inference import HuggingfaceModel
+
 
 from orca_hls_utils.DateRangeHLSStream import DateRangeHLSStream
 from orca_hls_utils.HLSStream import HLSStream
@@ -119,6 +121,13 @@ if __name__ == "__main__":
 	elif model_type == "FastAI":
 		model_name = config_params["model_name"]
 		whalecall_classification_model = FastAI2Model(model_path=model_path, model_name=model_name, threshold=model_local_threshold, min_num_positive_calls_threshold=model_global_threshold)
+	elif model_type == "Huggingface":
+		model_name = config_params["model_name"]
+
+		# assert not both moel_name and model_path are not none
+		assert model_name is not None or model_path is not None, "model_name or model_path should be provided"
+		assert not(model_name is not None and model_path is not None), "model_name and model_path should not be provided together"
+		whalecall_classification_model = HuggingfaceModel(model_path=model_path, model_name=model_name, threshold=model_local_threshold, min_num_positive_calls_threshold=model_global_threshold)
 	else:
 		raise ValueError("model_type should be one of AudioSet / FastAIModel")
 
