@@ -1,0 +1,13 @@
+model_type: "Huggingface"
+model_local_threshold: 0.8
+model_global_threshold: 1
+model_path: null
+model_name: "DORI-SRKW/whisper-base-mm"
+hls_stream_type: "DateRangeHLS"
+hls_polling_interval: 60
+hls_start_time_pst: "2024-09-21 21:59"
+hls_end_time_pst: "2024-09-21 22:02"
+hls_hydrophone_id: "rpi_orcasound_lab"
+upload_to_azure: False
+delete_local_wavs: False
+log_results: "silent_mode_results" # this is an absolute or relative path to a directory where all of the json predictions are logged.

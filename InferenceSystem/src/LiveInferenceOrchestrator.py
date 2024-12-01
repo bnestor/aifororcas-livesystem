@@ -155,6 +155,10 @@ if __name__ == "__main__":
 	
 	if hls_stream_type == "LiveHLS":
 		hls_stream = HLSStream(hydrophone_stream_url, hls_polling_interval, local_dir)
+
+		# Adding a 10 second addition because there is logic in HLSStream that checks if now < current_clip_end_time
+		current_clip_end_time = datetime.utcnow() + timedelta(0,10)
+
 	elif hls_stream_type == "DateRangeHLS":
 		hls_start_time_pst = config_params["hls_start_time_pst"]
 		hls_end_time_pst = config_params["hls_end_time_pst"]
@@ -168,11 +172,13 @@ if __name__ == "__main__":
 		hls_end_time_unix = int(end_dt_aware.timestamp())
 
 		hls_stream = DateRangeHLSStream(hydrophone_stream_url, hls_polling_interval, hls_start_time_unix, hls_end_time_unix, local_dir, False)
+
+		current_clip_end_time = start_dt + timedelta(0, hls_polling_interval)
 	else:
 		raise ValueError("hls_stream_type should be one of LiveHLS or DateRangeHLS")
 
-	# Adding a 10 second addition because there is logic in HLSStream that checks if now < current_clip_end_time
-	current_clip_end_time = datetime.utcnow() + timedelta(0,10)
+	
+
 
 	while not hls_stream.is_stream_over():
 		#TODO (@prgogia) prepend hydrophone friendly name to clip and remove slashes
@@ -222,6 +228,38 @@ if __name__ == "__main__":
 					container.create_item(body=metadata)
 					print("Added metadata to Azure CosmosDB")
 				
+			
+
+			if 'log_results' in config_params:
+				try: 
+					shutil
+				except:
+					import shutil
+				if config_params['upload_to_azure']:
+					# override the logging, since it is already deployed
+					pass
+				elif config_params['log_results'] is not None:
+					# log silent trial data to destination folder
+					os.makedirs(config_params['log_results'], exist_ok=True)
+					prediction_results.update({'model_type': config_params['model_type'],'model_name': config_params['model_name'], 'model_path':config_params['model_path']})
+					json_name = os.path.basename(clip_path).replace('.wav', '.json')
+					with open(os.path.join(config_params['log_results'], json_name), 'w+') as f:
+						json.dump(prediction_results, f)
+
+					# copy wav and spectrogram to destination folder
+					if prediction_results["global_prediction"] == 1:
+						try:
+							shutil.copy(clip_path, os.path.join(config_params['log_results'], os.path.basename(clip_path)))
+							shutil.copy(spectrogram_path, os.path.join(config_params['log_results'], os.path.basename(spectrogram_path)))
+						except:
+							pass
+					# elif not(config_params["delete_local_wavs"]):
+					# 	try:
+					# 		shutil.copy(clip_path, os.path.join(config_params['log_results'], os.path.basename(clip_path)))
+					# 		shutil.copy(spectrogram_path, os.path.join(config_params['log_results'], os.path.basename(spectrogram_path)))
+					# 	except:
+					# 		pass
+
 			# delete local wav, spec, metadata
 			if config_params["delete_local_wavs"]:
 				os.remove(clip_path)

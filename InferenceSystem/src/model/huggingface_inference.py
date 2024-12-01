@@ -61,18 +61,24 @@ class HFDataset(torch.utils.data.Dataset):
         if torch.isnan(data).any():
             raise Exception(wav_file_path)
         
+        # print(data.shape)
         if not(self.mono):
             data=data.expand(2,-1) # because it is mono
         elif data.shape[0]==2:
             # check if one side is all nans?
             if torch.sum(data[0])==0:
+                # print(1)
                 data=data[1]
             elif torch.sum(data[1])==0:
+                # print(2)
                 print("it was all 0")
                 raise
                 data=data[0]
             else:
+                # print(3)
                 data=data.mean(0, keepdim=True)
+                # data = data.max(0, keepdim=True)[0]
+        # print(data.shape)
 
 
         # check if any data is nan
@@ -158,7 +164,7 @@ class HuggingfaceModel():
         for batch in dataloader:
             batch = {k: v.to(self.device) for k, v in batch.items()}
             output = self.model(**batch)
-            predictions.append(torch.softmax(output.logits, dim=1)[0][1].cpu().data.numpy()) # 1 prediction per 15 second clip
+            predictions.append(torch.softmax(output.logits, dim=1)[0][1].cpu().data.numpy().tolist()) # 1 prediction per 15 second clip
 
 
         # Aggregating predictions
