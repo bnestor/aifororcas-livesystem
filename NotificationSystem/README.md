@@ -1,10 +1,20 @@
 ## AI For Orcas - Notification System
 
-The notification system is a set of azure functions responsible for:
+The notification system is a set of Azure functions responsible for:
 - Facilitating adding/removing moderators and subscribers
 - Identifying changes in the database and sending alerts
 
 ## Architecture
+
+### Update Orcasite
+
+![post to Orcasite architecture](img/post-to-orcasite.png)
+
+One Azure Function is used to notify the [Orcasite JSON API](https://live.orcasound.net/api/json/swaggerui) of any machine detections.
+
+- A change in the Cosmos DB metadata store triggers the PostToOrcasite function
+- The Orcasite feeds API is used to map an OrcaHello location id to an Orcasite feed id
+- The function then calls the Orcasite Detection API to post a detection to Orcasite
 
 ### Update email list
 
@@ -52,7 +62,7 @@ In the moderators flow:
 
 - A change in the Cosmos DB metadata store triggers the SendModeratorEmail function
 - If there is a newly detected orca call that requires a moderator to validate, the function fetches the relevant email list
-- The function then calls SendGrid to send emails to moderators
+- The function then calls AWS Simple Email Service to send emails to moderators
 
 In the subscribers flow:
 
@@ -60,7 +70,7 @@ In the subscribers flow:
 - If there is a new orca call that the moderator has validated, the function sends a message to a queue
 - The SendSubscriberEmail function periodically checks the queue
 - If there are items in the queue, the function fetches the relevant email list
-- The function then calls SendGrid to send emails to subscribers
+- The function then calls AWS Simple Email Service to send emails to subscribers
 
 ## Get email list
 
@@ -111,7 +121,6 @@ All resources are located in resource group **LiveSRKWNotificationSystem**.
 1. Storage account with queues, email template images and moderator/subscriber list: orcanotificationstorage
 2. Metadata store (from which some functions are triggered): aifororcasmetadatastore
 3. Azure function app: orcanotification
-4. SendGrid account (for sending emails): aifororcas
 
 ## Run Locally
 It is recommended to go to the "orcanotification" function app, then Settings > Configuration to find the app settings used. 
@@ -127,8 +136,11 @@ Create local.settings.json in the current directory (NotificationSystem) using t
 
         "OrcaNotificationStorageSetting": "<storage account connection string>",
         "aifororcasmetadatastore_DOCUMENTDB": "<cosmos db connection string>",
-        "SendGridKey": "<SendGrid API key>",
-        "SenderEmail": "<email address>"
+        "AWS_ACCESS_KEY_ID": "<AWS Access Key>",
+        "AWS_SECRET_ACCESS_KEY": "<AWS Secret Key>",
+        "SenderEmail": "<email address>",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+        "FUNCTIONS_INPROC_NET8_ENABLED": "1"
     }
 }
 ```
@@ -138,3 +150,14 @@ Create local.settings.json in the current directory (NotificationSystem) using t
 1. Go to the "orcanotification" function app (link 3 above). 
 2. On the "Overview" tab, make sure the status of the function shows running.
 3. On the "Functions" tab, you should see all the functions of the notification system. Enable/Disable as needed.
+
+## Directory structure
+
+The directories in this system are organized as follows:
+
+* img: Contains images used in this README
+* NotificationSystem: Contains the source code for the Azure functions
+* NotificationSystem.Tests.Unit: Contains unit tests
+* NotificationSystem.Tests.Integration: Contains integration tests
+* PostBackfillToOrcasite: Contains a console app to post the history of machine detections to the Orcasite detection API
+* TestData: Contains data files used by the tests

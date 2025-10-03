@@ -9,6 +9,7 @@ on:
     - ModeratorFrontEnd/AIForOrcas/AIForOrcas.Client.BL/**
     - ModeratorFrontEnd/AIForOrcas/AIForOrcas.Server.BL/**
     - ModeratorFrontEnd/AIForOrcas/AIForOrcas.DTO/**
+    - .github/workflows/AIForOrcas.Client.Web.yaml
   push:
     branches:
     - main
@@ -17,6 +18,7 @@ on:
     - ModeratorFrontEnd/AIForOrcas/AIForOrcas.Client.BL/**
     - ModeratorFrontEnd/AIForOrcas/AIForOrcas.Server.BL/**
     - ModeratorFrontEnd/AIForOrcas/AIForOrcas.DTO/**
+    - .github/workflows/AIForOrcas.Client.Web.yaml
   workflow_dispatch: # Allow manual workflow invocation from the Github Actions UI
 
 env:
@@ -30,19 +32,22 @@ defaults:
   run:
     working-directory: ModeratorFrontEnd/AIForOrcas/AIForOrcas.Client.Web
 
+permissions:  # added using https://github.com/step-security/secure-repo
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-    - uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+    - uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
       with:
         egress-policy: audit
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
     - name: Dependencies
@@ -54,7 +59,7 @@ jobs:
     - name: Publish
       run: dotnet publish --no-restore -c Release -o './${{ env.PUBLISH_DIR }}'
     - name: Artifacts cache
-      uses: actions/cache@v2
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
         path: ./${{ env.WORKING_DIR }}/${{ env.PUBLISH_DIR }}
         key: ${{ github.sha }}-${{ env.AZURE_APP_NAME }}-${{ env.DOTNET_RUNTIME }}-artifacts
@@ -66,16 +71,16 @@ jobs:
     permissions:
       contents: read
     steps:
-    - uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+    - uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
       with:
         egress-policy: audit
     - name: Artifacts cache
-      uses: actions/cache@v2
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
       with:
         path: ./${{ env.WORKING_DIR}}/${{ env.PUBLISH_DIR }}
         key: ${{ github.sha }}-${{ env.AZURE_APP_NAME }}-${{ env.DOTNET_RUNTIME }}-artifacts
     - name: Deploy to azure
-      uses: azure/webapps-deploy@v2
+      uses: azure/webapps-deploy@657f0700ea5214d56a0400d8ac5e8023c963d25d # v3.0.6
       with:
         app-name: ${{ env.AZURE_APP_NAME }}
         publish-profile: ${{ secrets.AZURE_AISFORORCAS_PUBLISH_PROFILE }}

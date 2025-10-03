@@ -8,14 +8,29 @@ This document describes the following steps
 
 Note: We use Python 3, specifically tested with Python 3.7.4
 
+**Important:** Python 3.8 or earlier is required. The dependencies (particularly torchaudio==0.6.0 and older versions of librosa, fastai) are not compatible with Python 3.9 or later. If you encounter installation errors with newer Python versions, please use Python 3.7 or 3.8.
+
 # How to run the InferenceSystem locally
 ## Create a virtual environment
 
-1. In your working directory, run `python -m venv inference-venv`. This creates a directory `inference-venv` with relevant files/scripts. 
+1. In your working directory, run `python -m venv inference-venv` using Python 3.7 or 3.8. This creates a directory `inference-venv` with relevant files/scripts. 
 2. On Mac or Linux, activate this environment with `source inference-venv/bin/activate` and when you're done, `deactivate`
 
     On Windows, activate with `.\inference-venv\Scripts\activate.bat` and `.\inference-venv\Scripts\deactivate.bat` when done
-3. In an active environment, cd to `/InferenceSystem` and run `python -m pip install --upgrade pip && pip install -r requirements.txt` 
+3. In an active environment, cd to `/InferenceSystem` and run `python -m pip install --upgrade pip && pip install -r requirements.txt`
+
+**Troubleshooting:** If you encounter dependency conflicts with standard `pip install`, you can use `uv` which is better at resolving package version conflicts:
+
+```bash
+# Install uv (on Mac/Linux)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# On Windows, use pip to install uv first
+pip install uv
+
+# Then install dependencies using uv pip
+uv pip install -r requirements.txt
+``` 
 
 ## Model download
 
@@ -104,7 +119,7 @@ python src/LiveInferenceOrchestrator.py --config ./config/Test/FastAI_LiveHLS_Or
 You should see the following logs in your terminal. Since this is a Test config, no audio is uploaded to Azure and no metadata is written to CosmosDB.
 
 ```
-Listening to location https://s3-us-west-2.amazonaws.com/streaming-orcasound-net/rpi_orcasound_lab
+Listening to location https://s3-us-west-2.amazonaws.com/audio-orcasound-net/rpi_orcasound_lab
 Downloading live879.ts
 live879.ts: 205kB [00:00, 1.17MB/s]                                             
 Downloading live880.ts
@@ -176,7 +191,7 @@ docker build . -t live-inference-system -f ./Dockerfile
 
 Note: the config used in the Dockerfile is a Production config.
 
-TODO: fix. For now, you will have to manually create 5 different docker containers for the 5 hydrophone locations. Each time you will need to edit the Dockerfile and replace the config for each hydrophone location (OrcasoundLab, BushPoint, PortTownsend, Sunset Bay and Point Robinson).
+TODO: fix. For now, you will have to manually create a different docker container for each hydrophone location. Each time you will need to edit the Dockerfile and replace the config for each hydrophone location.
 
 
 ## Running the docker container
@@ -190,7 +205,7 @@ docker run --rm -it --env-file .env live-inference-system
 In addition, you should see something similar to the following in your console.
 
 ```
-Listening to location https://s3-us-west-2.amazonaws.com/streaming-orcasound-net/rpi_orcasound_lab
+Listening to location https://s3-us-west-2.amazonaws.com/audio-orcasound-net/rpi_orcasound_lab
 Downloading live879.ts
 live879.ts: 205kB [00:00, 1.17MB/s]                                             
 Downloading live880.ts

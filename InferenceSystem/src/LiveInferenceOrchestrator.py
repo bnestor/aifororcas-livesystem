@@ -35,13 +35,16 @@ COSMOSDB_ACCOUNT_NAME = "aifororcasmetadatastore"
 COSMOSDB_DATABASE_NAME = "predictions"
 COSMOSDB_CONTAINER_NAME = "metadata"
 
-ORCASOUND_LAB_LOCATION = {"id": "rpi_orcasound_lab", "name": "Haro Strait", "longitude":  -123.17357, "latitude": 48.55833}
-PORT_TOWNSEND_LOCATION = {"id": "rpi_port_townsend", "name": "Port Townsend", "longitude":  -122.76045, "latitude": 48.13569}
-BUSH_POINT_LOCATION = {"id": "rpi_bush_point", "name": "Bush Point", "longitude":  -122.6039, "latitude": 48.03371}
-SUNSET_BAY_LOCATION = {"id": "rpi_sunset_bay", "name": "Sunset Bay", "longitude":  -122.3339, "latitude": 47.86497}
-POINT_ROBINSON_LOCATION = {"id": "rpi_point_robinson", "name": "Point Robinson", "longitude":  -122.37267, "latitude": 47.38838}
+# TODO: get this data from https://live.orcasound.net/api/json/feeds
+BUSH_POINT_LOCATION = {"id": "rpi_bush_point", "name": "Bush Point", "longitude":  -122.6040035, "latitude": 48.0336664}
+MAST_CENTER_LOCATION = {"id": "rpi_mast_center", "name": "Mast Center", "longitude":  -122.32512, "latitude": 47.34922}
+NORTH_SAN_JUAN_CHANNEL_LOCATION = {"id": "rpi_north_sjc", "name": "North San Juan Channel", "longitude":  -123.058779, "latitude": 48.591294}
+ORCASOUND_LAB_LOCATION = {"id": "rpi_orcasound_lab", "name": "Orcasound Lab", "longitude":  -123.1735774, "latitude": 48.5583362}
+POINT_ROBINSON_LOCATION = {"id": "rpi_point_robinson", "name": "Point Robinson", "longitude":  -122.37267, "latitude": 47.388383}
+PORT_TOWNSEND_LOCATION = {"id": "rpi_port_townsend", "name": "Port Townsend", "longitude":  -122.760614, "latitude": 48.135743}
+SUNSET_BAY_LOCATION = {"id": "rpi_sunset_bay", "name": "Sunset Bay", "longitude":  -122.33393605795372, "latitude": 47.86497296593844}
 
-source_guid_to_location = {"rpi_orcasound_lab" : ORCASOUND_LAB_LOCATION, "rpi_port_townsend" : PORT_TOWNSEND_LOCATION, "rpi_bush_point": BUSH_POINT_LOCATION, "rpi_sunset_bay": SUNSET_BAY_LOCATION, "rpi_point_robinson": POINT_ROBINSON_LOCATION }
+source_guid_to_location = {"rpi_bush_point": BUSH_POINT_LOCATION, "rpi_mast_center": MAST_CENTER_LOCATION, "rpi_north_sjc": NORTH_SAN_JUAN_CHANNEL_LOCATION, "rpi_orcasound_lab" : ORCASOUND_LAB_LOCATION, "rpi_point_robinson": POINT_ROBINSON_LOCATION, "rpi_port_townsend" : PORT_TOWNSEND_LOCATION, "rpi_sunset_bay": SUNSET_BAY_LOCATION}
 
 def assemble_blob_uri(container_name, item_name):
 
@@ -104,6 +107,7 @@ if __name__ == "__main__":
 
 	# logger to app insights
 	app_insights_connection_string = os.getenv('INFERENCESYSTEM_APPINSIGHTS_CONNECTION_STRING')
+	print("INSTRUMENTATION KEY: ", app_insights_connection_string)
 	logger = logging.getLogger(__name__)
 	if app_insights_connection_string is not None:
 		logger.addHandler(AzureLogHandler(connection_string=app_insights_connection_string))
@@ -264,6 +268,18 @@ if __name__ == "__main__":
 			if config_params["delete_local_wavs"]:
 				os.remove(clip_path)
 				os.remove(spectrogram_path)
+
+			if 'log_results' in config_params:
+				if config_params['upload_to_azure']:
+					# override the logging, since it is already deployed
+					pass
+				elif config_params['log_results'] is not None:
+					# log silent trial data to destination folder
+					os.makedirs(config_params['log_results'], exist_ok=True)
+					prediction_results.update({'model_type': config_params['model_type'],'model_name': config_params['model_name'], 'model_path':config_params['model_path']})
+					json_name = os.path.basename(clip_path).replace('.wav', '.json')
+					with open(os.path.join(config_params['log_results'], json_name), 'w+') as f:
+						json.dump(prediction_results, f)
 
 		# get next current_clip_end_time by adding 60 seconds to current_clip_end_time
 		current_clip_end_time = current_clip_end_time + timedelta(0, hls_polling_interval)

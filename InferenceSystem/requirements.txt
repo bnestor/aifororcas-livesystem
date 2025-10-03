@@ -7,7 +7,7 @@ numpy
 torchaudio
 transformers
 ipython
-spacy
+spacy==3.5.4
 awscli
 requests
 bs4
